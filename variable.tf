@@ -82,5 +82,20 @@ variable "db_subnet_tags" {
   
 }
 
+variable "is_peering_required" {
+    default = false
+  
+}
 
+variable "requestor_vpc_id" {
+   
+}
+
+variable "default_route_table_id" {
+  
+}
+
+variable "default_vpc_cidr" {
+  
+}
 

@@ -34,7 +34,7 @@ resource "aws_subnet" "public" {
   tags = merge(
     var.common_tags,
     {
-     Name= "${var.project_name}-public-${local.azs[count.index]}"  
+     Name = "${var.project_name}-public-${local.azs[count.index]}"  
     }
   )
 }
@@ -71,10 +71,10 @@ resource "aws_subnet" "database" {
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
-  }
+  # route {
+  #   cidr_block = "0.0.0.0/0"
+  #   gateway_id = aws_internet_gateway.main.id
+  # }
 
   tags = merge (
     var.common_tags,
@@ -84,12 +84,21 @@ resource "aws_route_table" "public" {
   )
 }
 
+# always add route separetly
+resource "aws_route" "public" { 
+  route_table_id            = aws_route_table.public.id
+  destination_cidr_block    = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.main.id
+}
+
+
+# Elastic IP creation
 
 resource "aws_eip" "eip" {
   domain   = "vpc"
 }
 
-#creating NAT gateway
+#creating NAT gateway (we provision the NAT in public subnets because it has access  to connect internet)
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.eip.id
   subnet_id     = aws_subnet.public[0].id
@@ -112,10 +121,10 @@ resource "aws_nat_gateway" "main" {
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
+  # route {
+  #   cidr_block = "0.0.0.0/0"
+  #   nat_gateway_id = aws_nat_gateway.main.id
+  # }
 
   tags = merge (
     var.common_tags,
@@ -125,15 +134,23 @@ resource "aws_route_table" "private" {
   )
 }
 
+# always add route separetly
+resource "aws_route" "private" { 
+  route_table_id            = aws_route_table.private.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.main.id
+}
+
+
 #creating database route table and giving internet gate way access
 
 resource "aws_route_table" "database" {
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
+  # route {
+  #   cidr_block = "0.0.0.0/0"
+  #   nat_gateway_id = aws_nat_gateway.main.id
+  # }
 
   tags = merge (
     var.common_tags,
@@ -143,6 +160,15 @@ resource "aws_route_table" "database" {
   )
 }
 
+# always add route separetly
+resource "aws_route" "database" { 
+  route_table_id            = aws_route_table.database.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.main.id
+}
+
+
+#associating the subnets and route table
 
 resource "aws_route_table_association" "public" {
   count= length(var.public_subnet_cidr)  
@@ -164,7 +190,7 @@ resource "aws_route_table_association" "database" {
   route_table_id = aws_route_table.database.id
 }
 
-
+# grouping the database subnets
 resource "aws_db_subnet_group" "default" {
   name       = var.project_name
   subnet_ids = aws_subnet.database[*].id
@@ -177,7 +203,6 @@ resource "aws_db_subnet_group" "default" {
   var.db_subnet_tags
   )
 }
-
 
 
 

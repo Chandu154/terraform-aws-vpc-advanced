@@ -17,7 +17,7 @@ output "database_subnet_ids" {
   
 }
 
-output "some_update" {
-    value = "updated again"
+# output "some_update" {
+#     value = "updated again"
   
-}
+# }
